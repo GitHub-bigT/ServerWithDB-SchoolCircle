@@ -1,0 +1,131 @@
+--公共索引
+create sequence sco_id;
+select sco_id.nextval from dual;
+--用户表
+create table users
+(
+  user_id number(38) primary key,
+  user_tel varchar(50),
+  user_pwd varchar(50),
+  user_name varchar(50),
+  user_img varchar(200)
+);
+select user_id,user_name,user_img,user_tel from users where user_id not in(select friend_id from sco_friend where user_id=45);
+select * from users;
+
+select user_name,user_img from users where user_id=43;
+delete from users where user_id=44;
+insert into users(user_id,user_tel,user_pwd,user_name) values(sco_id.nextval,'18404968580','123456','我是小骚鸡');
+commit;
+
+--首页
+create table news
+(
+  news_id number(10) primary key,
+  news_title varchar2(200),
+  news_content varchar2(1000),
+  news_pic varchar2(200),
+  news_date varchar2(100)
+);
+select * from news;
+delete news;
+commit;
+
+--休闲娱乐界面
+--校园闲撇类型表
+create table sco_types
+(
+  type_id number(38) primary key,
+  type_name varchar(50)
+);
+drop table sco_types;
+select * from sco_types;
+delete sco_types;
+
+--内容表
+create table sco_contents
+(
+  content_id number(38) primary key,
+  content_content varchar(500),
+  content_date varchar2(100),
+  user_id references users(user_id),
+  type_id references sco_types(type_id),
+  content_title varchar2(100)
+);
+select * from sco_contents;
+delete sco_contents;
+commit;
+drop table sco_contents;
+--内容图片表
+create table sco_contents_pic
+(
+  sco_contents_pic_id number(38) primary key,
+  content_id number(38) references sco_contents(content_id),
+  content_pic varchar2(200)
+);
+drop table sco_contents_pic;
+commit;
+select * from sco_contents_pic;
+--查询所有内容
+select c.content_id,c.content_content,c.content_date,c.content_title,c.user_id,c.type_id,u.user_name,u.user_img,t.type_name,p.content_pic from sco_contents c right outer join sco_contents_pic p on c.content_id=p.content_id,users u ,sco_types t where c.user_id=u.user_id and c.type_id=t.type_id;
+
+
+--好友表  中间表 
+create table sco_friend
+(
+  user_id number(38) references users(user_id),
+  friend_id number(38) references users(user_id),
+  primary key(user_id,friend_id)
+);
+insert into sco_friend(user_id,friend_id) values(103,45);
+select * from sco_friend;
+delete sco_friend;
+delete sco_messages ;
+
+commit;
+--消息表
+create table sco_messages
+(
+  message_id number(38) primary key,
+  user_id number(38) references users(user_id),
+  target_user_id number(38) references users(user_id),
+  message_content varchar2(1000),
+  message_date varchar2(100)
+);
+--修改表结构 增加voice_time 字段
+alter table sco_messages add voice_time varchar2(100);
+commit;
+select * from sco_messages;
+delete sco_messages ;
+--访问聊天记录
+select message_id,user_id,target_user_id,message_content,message_date from sco_messages where user_id in (43,103) and target_user_id in (43,103);
+
+--访问得到所有好友信息及最后一条消息 错
+select m.user_id,m.target_user_id,u.user_name,u.user_img,m.message_content,m.message_date from 
+(select user_id,target_user_id,message_content,message_date from sco_messages where user_id=103 and message_date in 
+(select max(message_date) from sco_messages group by target_user_id)) m,users u where u.user_id=m.target_user_id;
+
+
+--访问得到所有好友信息
+select user_id friend_id,user_name,user_img,user_tel from users where user_id in (select friend_id from sco_friend where user_id=103);
+--访问聊天记录
+
+
+--||相当于加号
+select user_id||','||target_user_id,message_id,user_id,target_user_id,message_content,message_date from sco_messages where user_id=103  or target_user_id=103 ;
+
+
+delete sco_messages;
+insert into sco_messages(message_id,user_id,target_user_id,message_content) values(sco_id.nextval,103,43,'你好');
+commit;
+
+create table sco_content_comment (
+  comment_id number(38) primary key,
+  user_id number(9) references users(user_id),
+  content_id number(38) references sco_contents(content_id),
+  comment_date varchar2(100),
+  comment_content varchar2(300)
+);
+select * from sco_contents;
+select u.user_id,u.user_name,u.user_img,u.user_tel,c.comment_id,c.comment_date,c.comment_content from sco_content_comment c, users u where c.user_id=u.user_id and c.content_id=681;
+commit;
